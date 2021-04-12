@@ -1,0 +1,120 @@
+## implementation of Metropolis–Hastings sampling
+import numpy as np
+from scipy.stats import multivariate_normal
+from scipy.stats import pearsonr
+import sklearn.preprocessing as sp
+
+def gaussian_pdf(mean, cov, x):
+    k = len(mean)
+    assert k == len(x), 'Input dimension is not correct!'
+    invcov = np.linalg.solve(cov, np.eye(k))
+    diff = x - mean
+    prod = diff.T.dot(invcov).dot(diff)
+    det = np.linalg.det(cov)
+    pdf = 1.0/np.sqrt((2*np.pi)**k / det)*np.exp(-prod*0.5)
+    return pdf
+
+def MHSampling(init_state, target_pdf, iter):
+    x0 = init_state
+    cov = np.eye(len(init_state))
+    for t in range(iter):
+        x = np.random.multivariate_normal(x0, cov)
+        a = target_pdf(x)*gaussian_pdf(x, cov, x0)
+        a0 = target_pdf(x0)*gaussian_pdf(x0, cov, x)
+        #print(a, a0)
+        acceptance = min(1, a/a0)
+        u = np.random.rand(1)
+        if u < acceptance: x0 = x
+    return x0
+
+def uniformlychange1ele(x):
+    n = len(x)
+    seed = np.random.rand(1)
+    ind = int(seed*n)
+    x[ind] = -x[ind]
+    return x
+
+def MHSampling4Ising(init_state, target_pdf, iter):
+    x0 = init_state
+    for t in range(iter):
+        x = uniformlychange1ele(x0)
+        acceptance = min(1, target_pdf(x)/target_pdf(x0))
+        u = np.random.rand(1)
+        if u < acceptance: x0 = x
+    return x0
+
+def E_linear(A, x):
+    return x.T.dot(A).dot(x)
+
+def boltzmann_pdf(beta, E_fn, x, const):
+    return const*np.exp(-beta*E_fn(x))
+
+def normal_pdf(mu, A, x):
+    k = len(mu)
+    diff = x - mu
+    assert len(diff.shape) == 1
+    invA = np.linalg.solve(A, np.eye(k))
+    nu = np.exp(-diff.T.dot(invA).dot(diff)*0.5)
+    de = np.sqrt(np.linalg.det(A)*((2*np.pi)**k) )
+    #print(nu, de)
+    return nu/de
+
+def enumerate(ans, num_var):
+    if num_var > 1:
+        n = len(ans)//2
+        assert n*2 == 2**num_var
+        ans[:n, 0] = 1
+        enumerate(ans[:n, 1:], num_var-1)
+        ans[n:, 0] = -1
+        enumerate(ans[n:, 1:], num_var-1)
+    else:
+        ans[0, :] = 1
+        ans[1, :] = -1
+        return 
+
+
+def pearson_corr(samples):
+    num_samples = len(samples)
+    num_var = len(samples[0])
+    corr = np.zeros((num_var, num_var))
+    #print(samples.shape, corr.shape)
+    for i in range(num_var):
+        for j in range(i, num_var):
+            corr[i, j] = pearsonr(samples[:, i], samples[:, j])[0]
+    return corr.T + corr - np.diag(np.diag(corr))
+
+def simplecount(x0, x1):
+    num = len(x0)
+    ans = np.zeros((2,2))
+    for i in range(num):
+        if abs(x0[i]-1) < 1e-14 and abs(x1[i]-1) < 1e-14:
+            ans[0, 0] += 1
+        elif abs(x0[i]-1) < 1e-14 and abs(x1[i]+1) < 1e-14:
+            ans[0, 1] += 1
+        elif abs(x0[i]+1) < 1e-14 and abs(x1[i]-1) < 1e-14:
+            ans[1, 0] += 1
+        else:
+            ans[1, 1] += 1
+    assert np.sum(np.sum(ans)) == num
+    return ans/num
+
+def marginalize4Ising(samples):
+    num_var = samples.shape[1]
+    marginal = np.zeros((num_var, num_var, 2, 2))
+    for i in range(num_var):
+        for j in range(i, num_var):
+            marginal[i, j, :, :] = simplecount(samples[:, i], samples[:, j])
+    return marginal
+
+def preprocess(samples, MST):
+    edges = len(MST)
+    num_samples = samples.shape[0]
+    ans = np.zeros((num_samples, 2*edges))
+    count = 0
+    for i in range(edges):
+        edge = MST[i]
+        ans[:, count] = samples[:, edge[0]]
+        ans[:, count+1] = samples[:, edge[1]]
+        count += 2
+    
+    return sp.normalize(ans, axis=0)
