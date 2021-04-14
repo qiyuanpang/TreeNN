@@ -3,11 +3,13 @@ from model import TreeNN, FullNN
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
+import os
+os.envision['CUDA_VISIBLE_DEVICES'] = "-1"
 
 def main():
     num_var = 12
     beta = 1
-    max_iter = 25000
+    max_iter = 10000
     num_samples = 3000
     
     A = np.random.rand(num_var, num_var)
@@ -15,10 +17,11 @@ def main():
     for i in range(num_var):
         for j in range(num_var):
             if abs(j-i) >= 2: A[i, j] = 0
-            else: A[i, j] = 1
+            #else: A[i, j] = 1
     #A = A + 1*np.eye(num_var)
     A = A/np.max(np.max(abs(A)))
-    #eig, _ = np.linalg.eig(A)
+    eig, _ = np.linalg.eig(A)
+    A = A - np.eye(num_var)*(np.min(eig)/2)
     #A[2,3] = 0
     #A[3,2] = 0
     #print(eig)
@@ -83,10 +86,10 @@ def main():
     epoches = 10
     lr = 0.05
 
-    Tedges = []
-    for i in range(num_var):
-        for j in range(i, num_var):
-            Tedges.append([i, j])
+    #Tedges = []
+    #for i in range(num_var):
+    #    for j in range(i, num_var):
+    #        Tedges.append([i, j])
     num_or_size_split = len(Tedges)
 
     target = np.zeros(num_samples)
@@ -97,6 +100,15 @@ def main():
     plt.hist(target, bins=10)
     #plt.show()
     plt.savefig('prob.png')
+    
+    dist = np.zeros(2**num_var)
+    for i in range(2**num_var): dist[i] = target_pdf(dist[i])
+    #print(target)
+
+    plt.figure()
+    plt.hist(dist, bins=10)
+    #plt.show()
+    plt.savefig('dist.png')
     
     '''
     hidden_layers = [num_var, num_var, num_var]
