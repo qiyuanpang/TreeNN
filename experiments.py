@@ -4,13 +4,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 import os
-os.envision['CUDA_VISIBLE_DEVICES'] = "-1"
+os.environ['CUDA_VISIBLE_DEVICES'] = "-1"
 
 def main():
-    num_var = 12
+    num_var = 15
     beta = 1
-    max_iter = 10000
-    num_samples = 3000
+    max_iter = 30000
+    num_samples = 30000
     
     A = np.random.rand(num_var, num_var)
     A = (A.T + A)*0.5
@@ -83,8 +83,8 @@ def main():
     node_hidden_layers = [2, 2]
     root_hidden_layers = [5]
     batch_size = 24
-    epoches = 10
-    lr = 0.05
+    epoches = 125
+    lr = 0.02
 
     #Tedges = []
     #for i in range(num_var):
@@ -102,7 +102,7 @@ def main():
     plt.savefig('prob.png')
     
     dist = np.zeros(2**num_var)
-    for i in range(2**num_var): dist[i] = target_pdf(dist[i])
+    for i in range(2**num_var): dist[i] = target_pdf(allcases[i])
     #print(target)
 
     plt.figure()
