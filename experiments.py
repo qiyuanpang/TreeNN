@@ -7,7 +7,7 @@ import os
 os.environ['CUDA_VISIBLE_DEVICES'] = "-1"
 
 def main():
-    num_var = 15
+    num_var = 16
     beta = 1
     max_iter = 30000
     num_samples = 30000
@@ -83,7 +83,7 @@ def main():
     node_hidden_layers = [2, 2]
     root_hidden_layers = [5]
     batch_size = 24
-    epoches = 125
+    epoches = 50
     lr = 0.02
 
     #Tedges = []
@@ -120,7 +120,7 @@ def main():
     '''
 
     model = TreeNN(lr, num_or_size_split, node_hidden_layers, root_hidden_layers, batch_size)
-    samples_preprocessed = preprocess(samples, Tedges)*0.1
+    samples_preprocessed = preprocess(samples, Tedges)
     model.fit(samples_preprocessed, target, epoches, batch_size)
     
     
@@ -135,6 +135,12 @@ def main():
     plt.hist(pred, bins=10)
     #plt.show()
     plt.savefig('pred.png')
+
+    sums = 0.0
+    allcases_pre = preprocess(allcases, Tedges)
+    for i in range(2**num_var):
+        sums += model.predict(np.expand_dims(allcases_pre[i], 0))
+    print(sums)
 
 if __name__ == "__main__":
     main()
