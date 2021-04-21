@@ -1,18 +1,29 @@
 from utils import *
-from model import TreeNN, FullNN
+from model import TreeNN, FullNN, kfoldvalidation
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 import os
-os.envision['CUDA_VISIBLE_DEVICES'] = "-1"
+os.environ['CUDA_VISIBLE_DEVICES'] = "-1"
+
+def sigmoid(x):
+    return 1/(1+np.exp(-x))
+
+def kldivergence(p, q):
+    return sum(-p*np.log(q) + p*np.log(p))
+    
+def jsdivergence(p, q):
+    m = (p+q)*0.5
+    return kldivergence(p, m)*0.5 + kldivergence(q, m)*0.5
 
 def main():
-    num_var = 12
+    num_var = 10
     beta = 1
-    max_iter = 10000
-    num_samples = 3000
+    max_iter = 1000
+    num_samples = 4000
     
-    A = np.random.rand(num_var, num_var)
+    np.random.seed(0)    
+    A = np.random.randn(num_var, num_var)
     A = (A.T + A)*0.5
     for i in range(num_var):
         for j in range(num_var):
@@ -80,11 +91,12 @@ def main():
     Tedges = sorted(T.edges)
     
     
-    node_hidden_layers = [2, 2]
-    root_hidden_layers = [5]
-    batch_size = 24
-    epoches = 10
-    lr = 0.05
+    node_hidden_layers = [5, 5]
+    root_hidden_layers = [5, 5]
+    batch_size = 256
+    epoches = 300
+    lr = 0.01
+   
 
     #Tedges = []
     #for i in range(num_var):
@@ -102,7 +114,7 @@ def main():
     plt.savefig('prob.png')
     
     dist = np.zeros(2**num_var)
-    for i in range(2**num_var): dist[i] = target_pdf(dist[i])
+    for i in range(2**num_var): dist[i] = target_pdf(allcases[i])
     #print(target)
 
     plt.figure()
@@ -120,8 +132,8 @@ def main():
     '''
 
     model = TreeNN(lr, num_or_size_split, node_hidden_layers, root_hidden_layers, batch_size)
-    samples_preprocessed = preprocess(samples, Tedges)*0.1
-    model.fit(samples_preprocessed, target, epoches, batch_size)
+    samples_preprocessed = preprocess(samples, Tedges)
+    kfoldvalidation(model, samples_preprocessed, target, epoches, batch_size)
     
     
     batches = num_samples // batch_size
@@ -131,10 +143,37 @@ def main():
         #pred.append(model.predict(np.expand_dims(samples_preprocessed[], 0)))
         #print(model.predict(samples_preprocessed[i*batch_size:(i+1)*batch_size]))
         pred[i*batch_size:(i+1)*batch_size] = model.predict(samples_preprocessed[i*batch_size:(i+1)*batch_size])
+    
+    
+    sums = np.linalg.norm(target[:len(pred)]-pred)**2
+    print('relative l2 loss =', sums/np.linalg.norm(target[:len(pred)])**2)
+    
+    
+    allcases_pre = preprocess(allcases, Tedges)
+    batches = int(np.ceil(2**num_var / batch_size))
+    allcases_pred = np.zeros(2**num_var)
+    kl_b = 0.0
+    js_b = 0.0
+    for i in range(batches):
+        allcases_pred[i*batch_size:min(((i+1)*batch_size, 2**num_var))] = model.predict(allcases_pre[i*batch_size:min(((i+1)*batch_size, 2**num_var)), :])
+        allcases_i = allcases_pred[i*batch_size:min(((i+1)*batch_size, 2**num_var))]
+        kl_b += kldivergence(allcases_i, dist[i*batch_size:min(((i+1)*batch_size, 2**num_var))])
+        js_b += jsdivergence(allcases_i, dist[i*batch_size:min(((i+1)*batch_size, 2**num_var))])
+    print('cumulative dist  =', sum(allcases_pred))
+    kl = kldivergence(allcases_pred, dist)
+    print('kl divergence & its square =', kl, kl**2)
+    js = jsdivergence(allcases_pred, dist)
+    print('js divergence & its square =', js, js**2)
+    kl_b, js_b = kl_b/batches, js_b/batches
+    print('kl divergence & its square(batch) =', kl_b, kl_b**2)
+    print('js divergence & its square(batch) =', js_b, js_b**2)
+    
+        
+    
     plt.figure()
-    plt.hist(pred, bins=10)
+    plt.hist(pred/sum(allcases_pred), bins=10)
     #plt.show()
     plt.savefig('pred.png')
-
+    
 if __name__ == "__main__":
     main()

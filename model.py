@@ -1,10 +1,35 @@
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 import numpy as np
+import os
+
+def kfoldvalidation(model, data, labels, epoches = 10, batch_size = 24, k=5):
+    n = len(data)
+    assert n == len(labels)
+    m = int(np.ceil(1.0*n/k))
+    ind = list(range(n))
+    loss1 = 0.0
+    loss2 = 0.0
+    
+       
+    for i in range(k):
+        print(i, 'validation =============================')
+        ind1 = list(range(i*m, min(((i+1)*m, n))))
+        ind2 = list(set(ind).difference(set(ind1)))
+        model.fit(data[ind2, :], labels[ind2], epoches, batch_size)
+        loss1 += model.computeloss(data[ind1, :], labels[ind1])
+        loss2 += model.computeloss(data[ind2, :], labels[ind2])
+             
+    print('average    traning loss:', loss2/k)
+    print('average validation loss:', loss1/k)
+    return loss1/k, loss2/k
+        
+    
 
 class TreeNN:
     def __init__(self, lr, num_or_size_split, node_hidden_layers, root_hidden_layers, batch_size):
         self.nn_input = self.get_input_layer()
+        self.batch_size = batch_size
         splits = tf.split(self.nn_input, num_or_size_split, axis=1)
         #print(len(splits), splits[0].shape)
         cur_top, _ = self.node(splits[0], 2, node_hidden_layers, name='l1_0_')
@@ -19,17 +44,34 @@ class TreeNN:
         self.output = tf.squeeze(cur_top)
         self.label_placeholder = tf.placeholder("float", [None,], name="label")
         #print(self.output.shape, self.label_placeholder.shape)
-        #self.loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=self.label_placeholder, logits=self.output))
-        self.loss = tf.reduce_mean(tf.nn.l2_loss(self.output-self.label_placeholder))
-        reg_loss = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
-        self.loss += 10*sum(reg_loss)
+        self.custom_loss(reg=0)
         self.model_path = 'model'
+        self.deletefiles()
         self.optimizer = tf.train.AdamOptimizer(learning_rate=lr).minimize(self.loss)
         #loss = self.get_loss_layer()
 
+    def deletefiles(self):
+        if os.path.isfile('checkpoint'):
+            os.system("rm " + self.model_path + ".index*")
+            os.system("rm " + self.model_path + ".meta*")
+            os.system("rm " + self.model_path + ".data*")
+            os.system("rm checkpoint*")
+            
+    
     def get_input_layer(self):
         return tf.placeholder("float", [None, None], name="nn_input")
-
+    
+    def custom_loss(self, reg=0):
+        #loss = tf.reduce_mean(tf.nn.l2_loss(self.output-self.label_placeholder))
+        #loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=self.label_placeholder, logits=self.output))
+        #loss = tf.square(tf.reduce_mean(-tf.reduce_sum(self.output*tf.log(self.label_placeholder))+tf.reduce_sum(self.output*tf.log(self.output))))
+        loss = tf.reduce_mean(-tf.reduce_sum(self.output*tf.log((self.label_placeholder+self.output)*0.5))+tf.reduce_sum(self.output*tf.log(self.output)))*0.5 + tf.reduce_mean(-tf.reduce_sum(self.label_placeholder*tf.log((self.label_placeholder+self.output)*0.5))+tf.reduce_sum(self.label_placeholder*tf.log(self.label_placeholder)))*0.5
+        #loss += 1.1*tf.square(tf.reduce_mean((tf.reduce_sum(self.output)-tf.reduce_sum(self.label_placeholder))))
+        #loss += tf.reduce_mean(tf.nn.l2_loss(self.output-self.label_placeholder))
+        self.loss_wo_reg = loss
+        if reg > 0:
+            loss += reg*sum(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
+        self.loss = loss
     
     def init_weights(self, shape, name=None):
         return tf.Variable(tf.random_normal(shape, stddev=0.1), name=name)
@@ -97,6 +139,18 @@ class TreeNN:
         tf.train.Saver().restore(sess, self.model_path)
         feed_dict={self.nn_input: sample}
         return sess.run(self.output, feed_dict=feed_dict)
+        
+    def computeloss(self, samples, labels):
+        sess = tf.Session()
+        tf.train.Saver().restore(sess, self.model_path)
+        loss = 0.0
+        n = len(samples)
+        m = n // self.batch_size
+        for i in range(m):
+            feed_dict={self.nn_input: samples[i*self.batch_size:(i+1)*self.batch_size, :], self.label_placeholder: labels[i*self.batch_size:(i+1)*self.batch_size]}
+            loss += sess.run(self.loss_wo_reg, feed_dict=feed_dict)
+        
+        return loss/m
 
     
 class FullNN:
