@@ -109,7 +109,7 @@ def main():
     #print(target)
 
     plt.figure()
-    plt.hist(target, bins=10)
+    plt.hist(target, bins=6)
     #plt.show()
     plt.savefig('prob.png')
     
@@ -118,7 +118,7 @@ def main():
     #print(target)
 
     plt.figure()
-    plt.hist(dist, bins=10)
+    plt.hist(dist, bins=6)
     #plt.show()
     plt.savefig('dist.png')
     
@@ -168,12 +168,15 @@ def main():
     print('kl divergence & its square(batch) =', kl_b, kl_b**2)
     print('js divergence & its square(batch) =', js_b, js_b**2)
     
-        
-    
     plt.figure()
-    plt.hist(pred/sum(allcases_pred), bins=10)
+    plt.hist(pred, bins=6)
     #plt.show()
     plt.savefig('pred.png')
+    
+    plt.figure()
+    plt.hist(pred/sum(allcases_pred), bins=6)
+    #plt.show()
+    plt.savefig('pred_nm.png')
     
 if __name__ == "__main__":
     main()
