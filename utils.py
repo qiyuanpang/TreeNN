@@ -29,15 +29,31 @@ def MHSampling(init_state, target_pdf, iter):
 
 def uniformlychange1ele(x):
     n = len(x)
-    seed = np.random.rand(1)
-    ind = int(seed*n)
-    x[ind] = -x[ind]
+    seeds = np.random.rand(0, n, int(n/3))
+    for i in range(len(seeds)):
+        ind = seeds[i]
+        x[ind] = -x[ind]
     return x
 
-def MHSampling4Ising(init_state, target_pdf, iter):
+def proposaldist(x, y, rate=0.5):
+    prob = 1.0
+    for i in range(len(x)):
+        if abs(x[i]-y[i]) < 1e-14: prob = prob*(1-rate)
+        else: prob = prob*rate
+    return prob
+
+def uniformlychange(x, rate=0.5):
+    y = np.zeros(len(x))
+    for i in range(len(x)):
+        if np.random.rand() < rate: y[i] = -x[i]
+        else: y[i] = x[i]
+    return y
+
+def MHSampling4Ising(init_state, target_pdf, iter, rate):
     x0 = init_state
     for t in range(iter):
-        x = uniformlychange1ele(x0)
+        x = uniformlychange(x0, rate)
+        #acceptance = min(1, target_pdf(x)*proposaldist(x, x0, rate)/target_pdf(x0)*proposaldist(x0, x, rate))
         acceptance = min(1, target_pdf(x)/target_pdf(x0))
         u = np.random.rand(1)
         if u < acceptance: x0 = x
@@ -117,4 +133,35 @@ def preprocess(samples, MST):
         ans[:, count+1] = samples[:, edge[1]]
         count += 2
     
-    return sp.normalize(ans, axis=0)
+    return ans
+
+def to0or1(num):
+    return np.array((num+1) / 2)
+
+def frequency(samples):
+    (n, m) = samples.shape
+    freq = np.zeros(2**m)
+    weights = np.array([2**(m-i-1) for i in range(m)])
+    idx = to0or1(samples).dot(weights)
+    print(idx.shape)
+    for i in range(n):
+        freq[int(idx[i])] += 1
+    freq = freq/n
+    for i in range(2**m):
+        if freq[i] == 0.0: freq[i] = 1e-14
+    prob = np.zeros(n)
+    for i in range(n):
+        prob[i] = freq[int(idx[i])]
+    return prob, freq
+
+def probbyfreq(samples, freq):
+    (n, m) = samples.shape
+    weights = np.array([2**(m-i-1) for i in range(m)])
+    idx = to0or1(samples).dot(weights)
+    prob = np.zeros(n)
+    for i in range(n):
+        prob[i] = freq[int(idx[i])]
+    return prob
+
+
+
