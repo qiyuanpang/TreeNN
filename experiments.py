@@ -20,7 +20,7 @@ def main():
     num_var = 10
     beta = 1
     max_iter = 1000
-    num_samples = 20000
+    num_samples = 10000
     rate = 0.3
     
     np.random.seed(0)    
@@ -61,7 +61,6 @@ def main():
         sample = MHSampling4Ising(np.random.randint(0, 2, size=num_var)*2-1, target_pdf, max_iter, rate)
         samples.append(sample)
     samples = np.array(samples)
-    marginal = marginalize4Ising(samples)
 
     corr = pearson_corr(samples)
    
@@ -153,6 +152,11 @@ def main():
     js = jsdivergence(dist_em, dist)
     print('js divergence between ground truth and empirical truth', js)
     
+    marginal_em = marginalize4Ising(samples)
+    marginal_th = marginalize4Ising_truth(allcases, dist)
+    print('distance between marginal_em and marginal_th', np.linalg.norm(marginal_em-marginal_th)/np.linalg.norm(marginal_th))
+
+
     #Tedges = []
     #for i in range(num_var):
     #    for j in range(i, num_var):
@@ -208,7 +212,9 @@ def main():
     print('kl divergence & its square(batch) =', kl_b, kl_b**2)
     print('js divergence & its square(batch) =', js_b, js_b**2)
     
-        
+    marginal_pd = marginalize4Ising_truth(allcases, allcases_pred/sum(allcases_pred))
+    print('distance between marginal_pd and marginal_th', np.linalg.norm(marginal_pd-marginal_th)/np.linalg.norm(marginal_th))
+            
     
     plt.figure()
     plt.hist(allcases_pred/sum(allcases_pred), bins=10)
@@ -235,6 +241,10 @@ def main():
     kl_b, js_b = kl_b/batches, js_b/batches
     print('kl divergence & its square(batch) =', kl_b, kl_b**2)
     print('js divergence & its square(batch) =', js_b, js_b**2)
+
+    marginal_pd = marginalize4Ising_truth(allcases, allcases_pred/sum(allcases_pred))
+    print('distance between marginal_pd and marginal_th', np.linalg.norm(marginal_pd-marginal_th)/np.linalg.norm(marginal_th))
+     
 
     plt.figure()
     plt.hist(allcases_pred/sum(allcases_pred), bins=10)

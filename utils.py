@@ -122,6 +122,29 @@ def marginalize4Ising(samples):
             marginal[i, j, :, :] = simplecount(samples[:, i], samples[:, j])
     return marginal
 
+def marginalize4Ising_truth(samples, dist):
+    num_var = samples.shape[1]
+    marginal = np.zeros((num_var, num_var, 2, 2))
+    for i in range(num_var):
+        for j in range(num_var):
+            marginal[i, j, :, :] = simplecount_prob(samples[:, i], samples[:, j], dist)
+    return marginal
+
+def simplecount_prob(x0, x1, dist):
+    num = len(x0)
+    ans = np.zeros((2,2))
+    for i in range(num):
+        if abs(x0[i]-1) < 1e-14 and abs(x1[i]-1) < 1e-14:
+            ans[0, 0] += dist[i]
+        elif abs(x0[i]-1) < 1e-14 and abs(x1[i]+1) < 1e-14:
+            ans[0, 1] += dist[i]
+        elif abs(x0[i]+1) < 1e-14 and abs(x1[i]-1) < 1e-14:
+            ans[1, 0] += dist[i]
+        else:
+            ans[1, 1] += dist[i]
+    assert abs(np.sum(np.sum(ans))-1) < 1e-14
+    return ans
+
 def preprocess(samples, MST):
     edges = len(MST)
     num_samples = samples.shape[0]
