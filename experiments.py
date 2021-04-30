@@ -17,10 +17,10 @@ def jsdivergence(p, q):
     return kldivergence(p, m)*0.5 + kldivergence(q, m)*0.5
 
 def main():
-    num_var = 10
+    num_var = 13
     beta = 1
-    max_iter = 1000
-    num_samples = 10000
+    max_iter = 1500
+    num_samples = 30000
     rate = 0.3
     
     np.random.seed(0)    
@@ -122,7 +122,7 @@ def main():
     plt.figure()
     plt.hist(target, bins=10)
     #plt.show()
-    plt.savefig('prob.png')
+    plt.savefig('prob' + '_' + '%2d' % num_var  +  '.png')
     
     dist = np.zeros(2**num_var)
     for i in range(2**num_var): dist[i] = target_pdf(allcases[i])
@@ -131,7 +131,7 @@ def main():
     plt.figure()
     plt.hist(dist, bins=10)
     #plt.show()
-    plt.savefig('dist.png')
+    plt.savefig('dist' + '_' + '%2d' % num_var  +  '.png')
 
     labels, freq = frequency(samples)
     dist_em = probbyfreq(allcases, freq)
@@ -141,11 +141,11 @@ def main():
     plt.figure()
     plt.hist(dist_em, bins=10)
     #plt.show()
-    plt.savefig('dist_em.png')
+    plt.savefig('dist_em' + '_' + '%2d' % num_var  +  '.png')
 
     plt.figure()
     plt.hist(labels, bins=10)
-    plt.savefig('label.png')
+    plt.savefig('label' + '_' + '%2d' % num_var  +  '.png')
 
     kl = kldivergence(dist_em, dist)
     print('kl divergence between ground truth and empirical truth', kl)
@@ -154,7 +154,7 @@ def main():
     
     marginal_em = marginalize4Ising(samples)
     marginal_th = marginalize4Ising_truth(allcases, dist)
-    print('distance between marginal_em and marginal_th', np.linalg.norm(marginal_em-marginal_th)/np.linalg.norm(marginal_th))
+    print('distance between margin_em and margin_th', np.linalg.norm(marginal_em-marginal_th)/np.linalg.norm(marginal_th))
 
 
     #Tedges = []
@@ -213,13 +213,13 @@ def main():
     print('js divergence & its square(batch) =', js_b, js_b**2)
     
     marginal_pd = marginalize4Ising_truth(allcases, allcases_pred/sum(allcases_pred))
-    print('distance between marginal_pd and marginal_th', np.linalg.norm(marginal_pd-marginal_th)/np.linalg.norm(marginal_th))
+    print('distance between margin_pd and margin_th', np.linalg.norm(marginal_pd-marginal_th)/np.linalg.norm(marginal_th))
             
     
     plt.figure()
     plt.hist(allcases_pred/sum(allcases_pred), bins=10)
     #plt.show()
-    plt.savefig('pred.png')
+    plt.savefig('pred' + '_' + '%2d' % num_var  +  '.png')
 
     rekfoldvalidation(model, samples_preprocessed, labels, epoches, batch_size, 5)
 
@@ -243,12 +243,12 @@ def main():
     print('js divergence & its square(batch) =', js_b, js_b**2)
 
     marginal_pd = marginalize4Ising_truth(allcases, allcases_pred/sum(allcases_pred))
-    print('distance between marginal_pd and marginal_th', np.linalg.norm(marginal_pd-marginal_th)/np.linalg.norm(marginal_th))
+    print('distance between margin_pd and margin_th', np.linalg.norm(marginal_pd-marginal_th)/np.linalg.norm(marginal_th))
      
 
     plt.figure()
     plt.hist(allcases_pred/sum(allcases_pred), bins=10)
     #plt.show()
-    plt.savefig('pred_em.png')    
+    plt.savefig('pred_em' + '_' + '%2d' % num_var  +  '.png')    
 if __name__ == "__main__":
     main()
