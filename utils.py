@@ -130,6 +130,33 @@ def marginalize4Ising_truth(samples, dist):
             marginal[i, j, :, :] = simplecount_prob(samples[:, i], samples[:, j], dist)
     return marginal
 
+def expectation_truth(samples, dist):
+    (m, n) = samples.shape
+    ep = np.zeros(n)
+    for i in range(n):
+        prob1 = 0
+        prob_1 = 0
+        for j in range(m):
+            if abs(samples[j, i]-1) < 1e-14: prob1 += dist[j]
+            else: prob_1 += dist[j]
+        assert abs(prob1 + prob_1 - 1) < 1e-14
+        ep[i] = prob1-prob_1
+    return ep
+
+def pearson_corr_truth(margin, exp):
+    n = len(exp)
+    corr = np.zeros((n, n))
+    for i in range(n):
+        for j in range(i, n):
+            epi, epj = exp[i], exp[j]
+            cov = margin[i, j, 0, 0] + margin[i, j, 1, 1] - margin[i, j, 0, 1]- margin[i, j, 1, 0] - epi*epj
+            sigmai = np.sqrt(1-epi**2)
+            sigmaj = np.sqrt(1-epj**2)
+            corr[i, j] = cov/sigmai/sigmaj
+    corr = corr + corr.T - np.diag(np.diag(corr))
+    return corr
+
+
 def simplecount_prob(x0, x1, dist):
     num = len(x0)
     ans = np.zeros((2,2))
@@ -144,6 +171,8 @@ def simplecount_prob(x0, x1, dist):
             ans[1, 1] += dist[i]
     assert abs(np.sum(np.sum(ans))-1) < 1e-14
     return ans
+
+
 
 def preprocess(samples, MST):
     edges = len(MST)
