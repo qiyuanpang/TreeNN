@@ -63,11 +63,8 @@ def main():
     samples = np.array(samples)
 
     target = np.zeros(num_samples)
-    high = []
     for i in range(num_samples): 
         target[i] = target_pdf(samples[i])
-        if target[i] > 0.0075:
-            high.append(i)
     '''
     high = np.tile(high, 10)
     print(len(high), type(high))
@@ -114,7 +111,7 @@ def main():
     ep_th = expectation_truth(allcases, dist)
 
     corr = pearson_corr(samples)
-
+    '''    
     print('correlation matrix by sampling:')
     print(corr)
 
@@ -131,6 +128,8 @@ def main():
     plt.matshow(abs(corr_th))
     plt.savefig('corr_truth' + '_' + '%2d' % num_var  + '.png')
 
+    print('relative error between two correlation matrices:', np.linalg.norm(corr-corr_th)/np.linalg.norm(corr_th))
+    '''
     for i in range(num_var): corr[i, i] = 0
     G = nx.from_numpy_matrix(abs(corr), create_using=nx.Graph)
     #layout = nx.spring_layout(G)
@@ -147,10 +146,10 @@ def main():
     params = {}
     batch_size = 128
     epoches = 100
-    params['node_hidden_layers'] = [5, 5]
-    params['root_hidden_layers'] = [5, 5]
+    params['node_hidden_layers'] = [4, 4]
+    params['root_hidden_layers'] = [num_var-1, num_var-1]
     params['batch_size'] = batch_size
-    params['lr'] = 0.02
+    params['lr'] = 0.000005
    
 
     #Tedges = []
@@ -192,8 +191,17 @@ def main():
     print('############################### Tree NN ############################################')
     model = NNModel('TreeNN', params)
     samples_preprocessed = preprocess(samples, Tedges)
-    kfoldvalidation(model, samples_preprocessed, target, epoches, batch_size, 5)
-    
+    #kfoldvalidation(model, preprocess(allcases, Tedges), dist, epoches, batch_size, 5)
+    rekfoldvalidation(model, preprocess(allcases, Tedges), dist, epoches, batch_size, 5)
+    rekfoldvalidation(model, preprocess(allcases, Tedges), dist, epoches, batch_size, 5)
+    rekfoldvalidation(model, preprocess(allcases, Tedges), dist, epoches, batch_size, 5)
+    rekfoldvalidation(model, preprocess(allcases, Tedges), dist, epoches, batch_size, 5)
+    #rekfoldvalidation(model, preprocess(allcases, Tedges), dist, epoches, batch_size, 5)
+    #rekfoldvalidation(model, preprocess(allcases, Tedges), dist, epoches, batch_size, 5)
+    #rekfoldvalidation(model, preprocess(allcases, Tedges), dist, epoches, batch_size, 5)
+    #rekfoldvalidation(model, samples_preprocessed, labels, epoches, batch_size, 5)
+    #rekfoldvalidation(model, samples_preprocessed, labels, epoches, batch_size, 5)
+    #rekfoldvalidation(model, samples_preprocessed, labels, epoches, batch_size, 5)
     
     ############### CNN
     '''
@@ -243,15 +251,16 @@ def main():
     print('kl divergence & its square(batch) =', kl_b, kl_b**2)
     print('js divergence & its square(batch) =', js_b, js_b**2)
     
-    marginal_pd = marginalize4Ising_truth(allcases, allcases_pred/sum(allcases_pred))
-    print('distance between margin_pd and margin_th', np.linalg.norm(marginal_pd-marginal_th)/np.linalg.norm(marginal_th))
+    #marginal_pd = marginalize4Ising_truth(allcases, allcases_pred/sum(allcases_pred))
+    #print('distance between margin_pd and margin_th', np.linalg.norm(marginal_pd-marginal_th)/np.linalg.norm(marginal_th))
             
-    
+    '''
     plt.figure()
     plt.hist(allcases_pred/sum(allcases_pred), bins=10)
     #plt.show()
     plt.savefig('pred' + '_tree' + '_' + '%2d' % num_var  +  '.png')
-
+    '''
+    '''
     rekfoldvalidation(model, samples_preprocessed, labels, epoches, batch_size, 5)
 
     allcases_pre = preprocess(allcases, Tedges)
@@ -281,8 +290,8 @@ def main():
     plt.hist(allcases_pred/sum(allcases_pred), bins=10)
     #plt.show()
     plt.savefig('pred_em' + '_tree'  + '_' + '%2d' % num_var  +  '.png')
-
-
+    '''
+   
 
 
 
@@ -294,14 +303,18 @@ def main():
         for j in range(i+1, num_var):
             Tedges.append((i, j))
     
-    #Tedges = [(0,1), (2,3), (4,5), (6,7), (8,9)]
+    Tedges = [(0,1), (2,3), (4,5), (6,7), (8,9)]
     
-    params['hidden_layers'] = [100*num_var, 50*num_var, 25*num_var, 10*num_var]
+    params['hidden_layers'] = [num_var, num_var]
     params['dim_input'] = 2*len(Tedges)
     params['lr'] = 0.05
     samples_preprocessed = preprocess(samples, Tedges)
     model = NNModel('DenseNN', params)
-    kfoldvalidation(model, samples_preprocessed, target, epoches, batch_size, 5)
+    kfoldvalidation(model, preprocess(allcases, Tedges), dist, epoches, batch_size, 5)
+    rekfoldvalidation(model, preprocess(allcases, Tedges), dist, epoches, batch_size, 5)
+    rekfoldvalidation(model, preprocess(allcases, Tedges), dist, epoches, batch_size, 5)
+    rekfoldvalidation(model, preprocess(allcases, Tedges), dist, epoches, batch_size, 5)
+
     
 
     batches = num_samples // batch_size
@@ -345,6 +358,7 @@ def main():
     #plt.show()
     plt.savefig('pred' + '_dense' + '_' + '%2d' % num_var  +  '.png')
 
+    '''
     rekfoldvalidation(model, samples_preprocessed, labels, epoches, batch_size, 5)
 
     allcases_pre = preprocess(allcases, Tedges)
@@ -374,7 +388,7 @@ def main():
     plt.hist(allcases_pred/sum(allcases_pred), bins=10)
     #plt.show()
     plt.savefig('pred_em' + '_dense'  + '_' + '%2d' % num_var  +  '.png') 
-
+    '''
 
 
 
@@ -440,6 +454,7 @@ def main():
     #plt.show()
     plt.savefig('pred' + '_cnn' + '_' + '%2d' % num_var  +  '.png')
 
+    '''
     rekfoldvalidation(model, samples_preprocessed, labels, epoches, batch_size, 5)
 
     #allcases_pre = preprocess(allcases, Tedges)
@@ -471,6 +486,6 @@ def main():
     plt.hist(allcases_pred/sum(allcases_pred), bins=10)
     #plt.show()
     plt.savefig('pred_em' + '_cnn'  + '_' + '%2d' % num_var  +  '.png')  
-
+    '''
 if __name__ == "__main__":
     main()
