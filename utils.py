@@ -2,7 +2,22 @@
 import numpy as np
 from scipy.stats import multivariate_normal
 from scipy.stats import pearsonr
+from sklearn.cluster import KMeans
 import sklearn.preprocessing as sp
+
+def clusters(X, levels):
+    ans = [np.array(range(len(X)))]
+    for i in range(levels):
+        ansnew = []
+        for j in range(len(ans)):
+            kmeans = KMeans(n_clusters=2, random_state=0).fit(np.expand_dims(X[ans[j]], axis=1))
+            # print(kmeans.labels_)
+            ansnew.append(ans[j][np.where(kmeans.labels_==0)[0]])
+            ansnew.append(ans[j][np.where(kmeans.labels_==1)[0]])
+        ans = ansnew
+    return ans
+
+        
 
 def gaussian_pdf(mean, cov, x):
     k = len(mean)
@@ -175,16 +190,15 @@ def simplecount_prob(x0, x1, dist):
 
 
 def preprocess(samples, MST):
-    edges = len(MST)
+    edges = sum([len(MST[i]) for i in range(len(MST))])
     num_samples = samples.shape[0]
-    ans = np.zeros((num_samples, 2*edges))
+    ans = np.zeros((num_samples, edges))
     count = 0
-    for i in range(edges):
+    for i in range(len(MST)):
         edge = MST[i]
-        ans[:, count] = samples[:, edge[0]]
-        ans[:, count+1] = samples[:, edge[1]]
-        count += 2
-    
+        for j in range(len(edge)):
+            ans[:, count+j] = samples[:, edge[j]]
+        count += len(edge)
     return ans
 
 def to0or1(num):

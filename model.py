@@ -97,15 +97,15 @@ class NNModel:
         self.batch_size = self.params['batch_size']
         splits = tf.split(self.nn_input, self.params['num_or_size_split'], axis=1)
         #print(len(splits), splits[0].shape)
-        cur_top, _ = self.node(splits[0], 2, self.params['node_hidden_layers'], name='l1_0_')
-        for i in range(1, self.params['num_or_size_split']):
+        cur_top, _ = self.node(splits[0], self.params['num_or_size_split'][0], self.params['node_hidden_layers'], name='l1_0_')
+        for i in range(1, len(self.params['num_or_size_split'])):
             #print(i, splits[i].shape)
-            top, _ = self.node(splits[i], 2, self.params['node_hidden_layers'], name='l1_' + str(i) + '_')
+            top, _ = self.node(splits[i], self.params['num_or_size_split'][i], self.params['node_hidden_layers'], name='l1_' + str(i) + '_')
             cur_top = tf.concat([cur_top, top], axis=1)
         if len(self.params['root_hidden_layers']) == 0:
             cur_top = tf.reduce_sum(cur_top, 1)
         else:
-            cur_top, self.weights = self.lastnode(cur_top, self.params['num_or_size_split'], self.params['root_hidden_layers'], name='t_')
+            cur_top, self.weights = self.lastnode(cur_top, len(self.params['num_or_size_split']), self.params['root_hidden_layers'], name='t_')
         self.output = tf.squeeze(cur_top)
         print(self.output.shape)
         self.label_placeholder = tf.placeholder("float", [None,], name="label")
@@ -191,7 +191,7 @@ class NNModel:
         for layer_step in range(0, n_layers):
             #print(layer_step, cur_top.shape)
             if layer_step != n_layers-1:  # final layer has no RELU
-                cur_top = tf.nn.relu(tf.matmul(cur_top, weights[layer_step]) + biases[layer_step])
+                cur_top = tf.nn.sigmoid(tf.matmul(cur_top, weights[layer_step]) + biases[layer_step])
             else:
                 cur_top = tf.matmul(cur_top, weights[layer_step]) + biases[layer_step]
         return cur_top, weights
