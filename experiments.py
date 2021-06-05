@@ -19,10 +19,11 @@ def jsdivergence(p, q):
 
 def main():
     num_var = 10
-    beta = 0.1
-    betastr = str(0.1).replace('.', '-')
+    what = 'LN'
+    beta = 1
+    betastr = str(0.1).replace('.', '-') + '_' + what
     max_iter = 1000
-    num_samples = 10000
+    num_samples = 8000
     rate = 0.3
     
     np.random.seed(0)    
@@ -120,24 +121,29 @@ def main():
 
     S = corr
     D = np.zeros((num_var, num_var))
-    Dh = D_h = D
+    Dh = np.zeros((num_var, num_var))
+    D_h = np.zeros((num_var, num_var))
     for i in range(num_var): 
         D[i, i] = np.sum(S[i, :])
         Dh[i, i] = np.sqrt(D[i, i])
         D_h[i, i] = 1/np.sqrt(D[i, i])
-    L = D- S
+    L = D - S
     LN = np.matmul(np.matmul(D_h, L), D_h)
     v = np.matmul(Dh, np.ones((num_var, 1)))
     E = np.eye(num_var) - np.matmul(v, v.T)
-    M = np.matmul(np.matmul(E.T, LN), E)
+    M = np.matmul(np.matmul(E, LN), E)
     eigLN, vecLN = np.linalg.eig(LN)
     eigM, vecM = np.linalg.eig(M)
-    # print('eigLN: ', eigLN)
+    print('eigLN: ', eigLN)
     # print('eigM: ', eigM)
-
-    mineigLN = np.argmin(abs(eigLN))
-    mineigM = np.argmin(abs(eigM))
-
+    
+    abseigLN = abs(eigLN)
+    abseigM = abs(eigM)
+    mineigLN = sorted(range(num_var), key=lambda x: abseigLN[x])[1]
+    mineigM = sorted(range(num_var), key=lambda x: abseigM[x])[1]
+    
+    print(mineigLN, mineigM)
+    print(abseigLN[mineigLN], abseigM[mineigM])
     eigvecLN = vecLN[:, mineigLN]
     eigvecM = vecM[:, mineigM]
     print(eigvecLN)
@@ -178,7 +184,11 @@ def main():
     plt.savefig('tree' + '_' + '%2d' % num_var  + '_' + betastr + '.png')
     #plt.show()
     # Tedges = sorted(T.edges)
-    Tedges = clustersLN
+    if what == 'LN':
+       Tedges = clustersLN
+    elif what == 'M':
+       Tedges = clustersM
+    print('clusters = ', Tedges)
     
     params = {}
     batch_size = 128
@@ -186,7 +196,7 @@ def main():
     params['node_hidden_layers'] = [4, 4]
     params['root_hidden_layers'] = [num_var-1, num_var-1]
     params['batch_size'] = batch_size
-    params['lr'] = 0.00002
+    params['lr'] = 0.000001
    
 
     #Tedges = []
@@ -231,6 +241,8 @@ def main():
     model = NNModel('TreeNN', params)
     samples_preprocessed = preprocess(samples, Tedges)
     kfoldvalidation(model, preprocess(samples, Tedges), target, epoches, batch_size, 5)
+    rekfoldvalidation(model, preprocess(samples, Tedges), target, epoches, batch_size, 5)
+    rekfoldvalidation(model, preprocess(samples, Tedges), target, epoches, batch_size, 5)
     rekfoldvalidation(model, preprocess(samples, Tedges), target, epoches, batch_size, 5)
     rekfoldvalidation(model, preprocess(samples, Tedges), target, epoches, batch_size, 5)
     rekfoldvalidation(model, preprocess(samples, Tedges), target, epoches, batch_size, 5)
