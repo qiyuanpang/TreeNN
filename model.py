@@ -87,7 +87,7 @@ class NNModel:
     def DenseNN(self):
         self.nn_input = self.get_input_layer()
         self.batch_size = self.params['batch_size']
-        cur_top,_ = self.lastnode(self.nn_input, self.params['dim_input'], self.params['hidden_layers'], name='f_')
+        cur_top, self.weights, self.biases = self.lastnode(self.nn_input, self.params['dim_input'], self.params['hidden_layers'], name='f_')
         self.output = tf.squeeze(tf.math.sigmoid(cur_top))
         self.label_placeholder = tf.placeholder("float", [None,], name="label")
         self.custom_loss(reg=0)
@@ -194,7 +194,7 @@ class NNModel:
                 cur_top = tf.nn.sigmoid(tf.matmul(cur_top, weights[layer_step]) + biases[layer_step])
             else:
                 cur_top = tf.matmul(cur_top, weights[layer_step]) + biases[layer_step]
-        return cur_top, weights
+        return cur_top, weights, biases
 
 
     def fit(self, samples, target, epoches, batch_size, save=False):
@@ -282,3 +282,15 @@ class NNModel:
             if save:
                 self.deletefiles()
                 tf.train.Saver().save(sess, self.model_path)
+
+    def get_weights(self):
+        reader = tf.train.NewCheckpointReader(self.model_path)
+        variables = reader.get_variable_to_shape_map()
+        names = []
+        for var in variables:
+            if var.find('Adam') == -1 and var != 'beta1_power' and var != 'beta2_power':
+                names.append(var)
+        ans = {}
+        for name in names:
+            ans[name] = reader.get_tensor(name)
+        return ans

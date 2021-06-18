@@ -20,10 +20,10 @@ def jsdivergence(p, q):
 def main():
     num_var = 10
     what = 'LN'
-    beta = 1
+    beta = 0.1
     betastr = str(0.1).replace('.', '-') + '_' + what
     max_iter = 1000
-    num_samples = 8000
+    num_samples = 10000
     rate = 0.3
     
     np.random.seed(0)    
@@ -31,8 +31,8 @@ def main():
     A = (A.T + A)*0.5
     for i in range(num_var):
         for j in range(num_var):
-            if abs(j-i) >= 2: A[i, j] = 0
-            #else: A[i, j] = 1
+            if abs(j-i) != 1: A[i, j] = 0
+            else: A[i, j] = -1
     #A = A + 1*np.eye(num_var)
     A = A/np.max(np.max(abs(A)))
     eig, _ = np.linalg.eig(A)
@@ -41,6 +41,7 @@ def main():
     #A[2,3] = 0
     #A[3,2] = 0
     # print(eig)
+
     
     #print(A[0:10,0:10])
     E = lambda x: E_linear(A, x)
@@ -119,7 +120,8 @@ def main():
     corr = pearson_corr(samples)
     corr_th = pearson_corr_truth(marginal_th, ep_th)
 
-    S = corr
+    S = abs(corr)
+    print(S.shape, num_var)
     D = np.zeros((num_var, num_var))
     Dh = np.zeros((num_var, num_var))
     D_h = np.zeros((num_var, num_var))
@@ -216,96 +218,64 @@ def main():
     
     print('distance between margin_em and margin_th', np.linalg.norm(marginal_em-marginal_th)/np.linalg.norm(marginal_th))
 
-    
-    ############### DenseNN
-    '''
-    print('################################# Dense NN ########################################')
-    Tedges = []
-    for i in range(num_var):
-        for j in range(i, num_var):
-            Tedges.append((i, j))
-    
-    #Tedges = [(0,1), (2,3), (4,5), (6,7), (8,9)]
-    
-    params['hidden_layers'] = [30*num_var, 20*num_var, 10*num_var, num_var]
-    params['dim_input'] = 2*len(Tedges)
-    params['lr'] = 0.1
-    samples_preprocessed = preprocess(samples, Tedges)
-    model = NNModel('DenseNN', params)
-    kfoldvalidation(model, samples_preprocessed, target, epoches, batch_size, 5)
-    '''
 
     ############## TreeNN
     
-    print('############################### Tree NN ############################################')
-    model = NNModel('TreeNN', params)
-    samples_preprocessed = preprocess(samples, Tedges)
-    kfoldvalidation(model, preprocess(samples, Tedges), target, epoches, batch_size, 5)
-    rekfoldvalidation(model, preprocess(samples, Tedges), target, epoches, batch_size, 5)
-    rekfoldvalidation(model, preprocess(samples, Tedges), target, epoches, batch_size, 5)
-    rekfoldvalidation(model, preprocess(samples, Tedges), target, epoches, batch_size, 5)
-    rekfoldvalidation(model, preprocess(samples, Tedges), target, epoches, batch_size, 5)
-    rekfoldvalidation(model, preprocess(samples, Tedges), target, epoches, batch_size, 5)
-    rekfoldvalidation(model, preprocess(samples, Tedges), target, epoches, batch_size, 5)
-    rekfoldvalidation(model, preprocess(samples, Tedges), target, epoches, batch_size, 5)
-    #rekfoldvalidation(model, preprocess(allcases, Tedges), dist, epoches, batch_size, 5)
-    #rekfoldvalidation(model, preprocess(allcases, Tedges), dist, epoches, batch_size, 5)
-    #rekfoldvalidation(model, preprocess(allcases, Tedges), dist, epoches, batch_size, 5)
-    #rekfoldvalidation(model, samples_preprocessed, labels, epoches, batch_size, 5)
-    #rekfoldvalidation(model, samples_preprocessed, labels, epoches, batch_size, 5)
-    #rekfoldvalidation(model, samples_preprocessed, labels, epoches, batch_size, 5)
+    # print('############################### Tree NN ############################################')
+    # model = NNModel('TreeNN', params)
+    # samples_preprocessed = preprocess(samples, Tedges)
+    # kfoldvalidation(model, preprocess(samples, Tedges), target, epoches, batch_size, 5)
+    # rekfoldvalidation(model, preprocess(samples, Tedges), target, epoches, batch_size, 5)
+    # rekfoldvalidation(model, preprocess(samples, Tedges), target, epoches, batch_size, 5)
+    # rekfoldvalidation(model, preprocess(samples, Tedges), target, epoches, batch_size, 5)
+    # rekfoldvalidation(model, preprocess(samples, Tedges), target, epoches, batch_size, 5)
+    # rekfoldvalidation(model, preprocess(samples, Tedges), target, epoches, batch_size, 5)
+    # rekfoldvalidation(model, preprocess(samples, Tedges), target, epoches, batch_size, 5)
+    # rekfoldvalidation(model, preprocess(samples, Tedges), target, epoches, batch_size, 5)
+    # #rekfoldvalidation(model, preprocess(allcases, Tedges), dist, epoches, batch_size, 5)
+    # #rekfoldvalidation(model, preprocess(allcases, Tedges), dist, epoches, batch_size, 5)
+    # #rekfoldvalidation(model, preprocess(allcases, Tedges), dist, epoches, batch_size, 5)
+    # #rekfoldvalidation(model, samples_preprocessed, labels, epoches, batch_size, 5)
+    # #rekfoldvalidation(model, samples_preprocessed, labels, epoches, batch_size, 5)
+    # #rekfoldvalidation(model, samples_preprocessed, labels, epoches, batch_size, 5)
     
-    ############### CNN
-    '''
-    print('################################ CNN  ##############################################')
-    params['filters'] = 1
-    params['kernel_size'] = (1,3)
-    params['num_layers'] = 3
-    params['activation'] = 'sigmoid'
-    params['lr'] = 0.0001
-    params['input_shape'] = (None, 1, num_var, 1)
-    samples_preprocessed = np.zeros((num_samples, 1, num_var, 1))
-    for i in range(num_samples): samples_preprocessed[i, 0, :, 0] = samples[i]
-    model = NNModel('CNN', params)
-    kfoldvalidation(model, samples_preprocessed, target, epoches, batch_size, 5)
-    '''
 
 
-    batches = num_samples // batch_size
-    pred = np.zeros(batches*batch_size)
-    for i in range(batches):
-        #print(samples_preprocessed[high[i]])
-        #pred.append(model.predict(np.expand_dims(samples_preprocessed[], 0)))
-        #print(model.predict(samples_preprocessed[i*batch_size:(i+1)*batch_size]))
-        pred[i*batch_size:(i+1)*batch_size] = model.predict(samples_preprocessed[i*batch_size:(i+1)*batch_size])
+    # batches = num_samples // batch_size
+    # pred = np.zeros(batches*batch_size)
+    # for i in range(batches):
+    #     #print(samples_preprocessed[high[i]])
+    #     #pred.append(model.predict(np.expand_dims(samples_preprocessed[], 0)))
+    #     #print(model.predict(samples_preprocessed[i*batch_size:(i+1)*batch_size]))
+    #     pred[i*batch_size:(i+1)*batch_size] = model.predict(samples_preprocessed[i*batch_size:(i+1)*batch_size])
     
     
-    sums = np.linalg.norm(target[:len(pred)]-pred)**2
-    print('relative l2 loss =', sums/np.linalg.norm(target[:len(pred)])**2)
+    # sums = np.linalg.norm(target[:len(pred)]-pred)**2
+    # print('relative l2 loss =', sums/np.linalg.norm(target[:len(pred)])**2)
     
     
-    allcases_pre = preprocess(allcases, Tedges)
-    batches = int(np.ceil(2**num_var / batch_size))
-    allcases_pred = np.zeros(2**num_var)
-    kl_b = 0.0
-    js_b = 0.0
-    for i in range(batches):
-        allcases_pred[i*batch_size:min(((i+1)*batch_size, 2**num_var))] = model.predict(allcases_pre[i*batch_size:min(((i+1)*batch_size, 2**num_var)), :])
-        allcases_i = allcases_pred[i*batch_size:min(((i+1)*batch_size, 2**num_var))]
-        kl_b += kldivergence(allcases_i, dist[i*batch_size:min(((i+1)*batch_size, 2**num_var))])
-        js_b += jsdivergence(allcases_i, dist[i*batch_size:min(((i+1)*batch_size, 2**num_var))])
-    print('cumulative dist  =', sum(allcases_pred))
-    kl = kldivergence(allcases_pred, dist)
-    print('kl divergence & its square =', kl, kl**2)
-    js = jsdivergence(allcases_pred, dist)
-    print('js divergence & its square =', js, js**2)
-    kl_b, js_b = kl_b/batches, js_b/batches
-    print('kl divergence & its square(batch) =', kl_b, kl_b**2)
-    print('js divergence & its square(batch) =', js_b, js_b**2)
+    # allcases_pre = preprocess(allcases, Tedges)
+    # batches = int(np.ceil(2**num_var / batch_size))
+    # allcases_pred = np.zeros(2**num_var)
+    # kl_b = 0.0
+    # js_b = 0.0
+    # for i in range(batches):
+    #     allcases_pred[i*batch_size:min(((i+1)*batch_size, 2**num_var))] = model.predict(allcases_pre[i*batch_size:min(((i+1)*batch_size, 2**num_var)), :])
+    #     allcases_i = allcases_pred[i*batch_size:min(((i+1)*batch_size, 2**num_var))]
+    #     kl_b += kldivergence(allcases_i, dist[i*batch_size:min(((i+1)*batch_size, 2**num_var))])
+    #     js_b += jsdivergence(allcases_i, dist[i*batch_size:min(((i+1)*batch_size, 2**num_var))])
+    # print('cumulative dist  =', sum(allcases_pred))
+    # kl = kldivergence(allcases_pred, dist)
+    # print('kl divergence & its square =', kl, kl**2)
+    # js = jsdivergence(allcases_pred, dist)
+    # print('js divergence & its square =', js, js**2)
+    # kl_b, js_b = kl_b/batches, js_b/batches
+    # print('kl divergence & its square(batch) =', kl_b, kl_b**2)
+    # print('js divergence & its square(batch) =', js_b, js_b**2)
     
-    marginal_pd = marginalize4Ising_truth(allcases, allcases_pred/sum(allcases_pred))
-    np.save('margin_pdt' + '_' + '%2d' % num_var  +  '_' + betastr + '.npy', marginal_pd)
-    print('distance between margin_pd and margin_th', np.linalg.norm(marginal_pd-marginal_th)/np.linalg.norm(marginal_th))
+    # marginal_pd = marginalize4Ising_truth(allcases, allcases_pred/sum(allcases_pred))
+    # np.save('margin_pdt' + '_' + '%2d' % num_var  +  '_' + betastr + '.npy', marginal_pd)
+    # print('distance between margin_pd and margin_th', np.linalg.norm(marginal_pd-marginal_th)/np.linalg.norm(marginal_th))
             
     '''
     plt.figure()
@@ -358,7 +328,7 @@ def main():
     
     Tedges = [(0,1), (2,3), (4,5), (6,7), (8,9)]
     
-    params['hidden_layers'] = [num_var, num_var]
+    params['hidden_layers'] = [num_var]
     params['dim_input'] = 2*len(Tedges)
     params['lr'] = 0.05
     samples_preprocessed = preprocess(samples, Tedges)
@@ -370,7 +340,12 @@ def main():
     rekfoldvalidation(model, preprocess(samples, Tedges), target, epoches, batch_size, 5)
     rekfoldvalidation(model, preprocess(samples, Tedges), target, epoches, batch_size, 5)
 
-    
+    weights = model.get_weights()
+    for name in weights:
+        if len(weights[name].shape) == 2:
+            plt.figure()
+            plt.matshow(weights[name])
+            plt.savefig(name+'.png')
 
     batches = num_samples // batch_size
     pred = np.zeros(batches*batch_size)

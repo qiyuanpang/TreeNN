@@ -1,0 +1,15 @@
+beta = 0.01
+
+clusters =  [array([3, 5, 8, 9]), array([0, 1, 2, 7]), array([4]), array([6])]
+
+beta = 0.1
+
+clusters =  [array([8, 9]), array([5, 6, 7]), array([1, 2, 3]), array([0, 4])]
+
+beta = 1
+
+clusters =  [array([6]), array([7, 8, 9]), array([0, 1, 2, 3, 4]), array([5])]
+
+beta = 2
+
+clusters =  [array([0, 1, 2, 3, 4]), array([5]), array([6]), array([7, 8, 9])]
