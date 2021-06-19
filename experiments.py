@@ -20,7 +20,7 @@ def jsdivergence(p, q):
 def main():
     num_var = 10
     what = 'LN'
-    beta = 0.5
+    beta = 0.05
     betastr = str(0.1).replace('.', '-') + '_' + what
     max_iter = 1000
     num_samples = 10000
