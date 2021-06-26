@@ -154,7 +154,7 @@ def expectation_truth(samples, dist):
         for j in range(m):
             if abs(samples[j, i]-1) < 1e-14: prob1 += dist[j]
             else: prob_1 += dist[j]
-        assert abs(prob1 + prob_1 - 1) < 1e-14
+        assert abs(prob1 + prob_1 - 1) < 1e-12
         ep[i] = prob1-prob_1
     return ep
 
